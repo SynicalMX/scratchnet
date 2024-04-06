@@ -1,0 +1,6 @@
+/dist/
+/venv/
+/scratchnet.egg-info/
+/.env
+/main.py
+/methods.py
