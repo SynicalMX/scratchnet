@@ -3,7 +3,7 @@ from distutils.core import setup
 setup(
 	name='scratchnet',
 	packages=['scratchnet'],
-	version='0.1.0',
+	version='{{VERSION_PLACEHOLDER}}',
 	license='MIT',
 	description='External server support for scratch projects.',
 	author='synicalmx',
