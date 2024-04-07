@@ -1,4 +1,4 @@
-import scratchnet as logger
+from scratchnet.logger import Logger
 from profanity import profanity
 from os.path import abspath, dirname, join
 
@@ -48,7 +48,7 @@ class Packet:
             string (str): String to be written.
         """
         if profanity.contains_profanity(string):
-            logger.warn('Tried to write a string with profanity, replacing it.')
+            Logger.warn('Tried to write a string with profanity, replacing it.')
             string = 'SERVER ERROR: your message contained profanity!'
         encoded = ''.join(str(Packet.CHARACTER_LIST.index(char) + 10) for char in string)
         self.__encoded_string += f'{encoded}00'
@@ -83,6 +83,30 @@ class Packet:
             self.__encoded_idx += 2
         self.__encoded_idx += 2
         return string
+
+    def read_struct(self, struct: list[str]) -> list[int | str] | None:
+        """
+        Reads a packet with types provided by a struct.
+
+        Example:
+            PLAYER_PACKET_STRUCT = ['string', 'int', 'int']
+
+
+        Args:
+            struct (list[str]): Type structure.
+        """
+        output: list[int | str] = []
+        for struct_type in struct:
+            lower = struct_type.lower()
+            if lower == 'string':
+                output.append(self.read_string())
+            elif lower == 'int':
+                output.append(self.read_number())
+            else:
+                Logger.err(f'Cannot read struct with invalid type "{lower}".')
+                return None
+
+        return output
 
     def set_idx(self, idx: int):
         """

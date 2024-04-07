@@ -13,7 +13,8 @@ setup(
 	install_requires=[
 		'scratchconnect',
 		'profanity',
-		'requests'
+		'requests',
+		'colorama'
 	],
 	classifiers=[
 		'Development Status :: 3 - Alpha',
