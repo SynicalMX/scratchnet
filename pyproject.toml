@@ -1,0 +1,18 @@
+[project]
+name = "scratchnet"
+version = "0.0.1"
+authors = [
+  { name="synicalmx" },
+]
+description = "A small example package"
+readme = "README.md"
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/SynicalMX/scratchnet"
+Issues = "https://github.com/SynicalMX/scratchnet/issues"

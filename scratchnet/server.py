@@ -2,12 +2,14 @@ import sys
 import types
 import signal
 import scratchconnect
+import asyncio
 from scratchconnect.CloudConnection import CloudConnection
 from requests.exceptions import JSONDecodeError
 from scratchconnect.Project import Project
 from scratchnet.packet import Packet
 from scratchnet.logger import Logger
 from colorama import Fore
+from ssl import SSLEOFError
 
 
 def sigint(a, b):
@@ -22,6 +24,7 @@ class Server:
 		self.cloud_name = cloud_name
 		self.server_key = server_key
 		self.status = 'stopped'
+		self.cloud = ''
 		self.old_cloud = ''
 		self.user: scratchconnect.ScratchConnect | None = None
 		self.project: Project | None = None
@@ -51,18 +54,24 @@ class Server:
 	def __main(self):
 		while self.status == 'running':
 			try:
-				cloud = self.variables.get_cloud_variable_value(self.cloud_name, limit=5)[0]
+				self.cloud = self.variables.get_cloud_variable_value(self.cloud_name, limit=5)[0]
 			except JSONDecodeError:
 				continue
-
-			if self.old_cloud == cloud:
+			except SSLEOFError:
 				continue
 
-			self.old_cloud = cloud
+			if self.old_cloud == self.cloud:
+				continue
 
-			packet = Packet(cloud)
-			owner = packet.read_string()
-			method_name = packet.read_string()
+			self.old_cloud = self.cloud
+
+			try:
+				packet = Packet(self.cloud)
+				owner = packet.read_string()
+				method_name = packet.read_string()
+			except:
+				Logger.err(f'Failed to read packet header.')
+				continue
 
 			if owner != self.server_key:
 				try:
@@ -71,7 +80,25 @@ class Server:
 						Logger.info(f'{owner} requested method "{method_name}"')
 						response: Packet | None = method(self, owner, packet)
 						if response is not None:
-							self.send_packet(response)
+							try:
+								self.send_packet(response)
+							except:
+								Logger.err(f'{owner} requested method "{method_name}", but the server failed to send the packet, queueing it again.')
+								try:
+									success = self.queue_packet(0.1, response)
+									if not success:
+										Logger.err(f'{owner} requested method "{method_name}", but the server failed to send the packet again.')
+										continue
+								except:
+									Logger.err(f'{owner} requested method "{method_name}", but the server failed to send the packet again.')
+									continue
+					else:
+						Logger.err(f'Server cannot call a method that\'s not a function.... (-_- )')
+
 				except AttributeError:
-					Logger.warn(f'{owner} requested an invalid method.')
+					Logger.warn(f'{owner} requested invalid method "{method_name}".')
 					continue
+
+	async def queue_packet(self, timeout: float, packet: Packet) -> bool:
+		await asyncio.sleep(timeout)
+		return self.send_packet(packet)
